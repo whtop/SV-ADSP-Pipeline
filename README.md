@@ -13,20 +13,20 @@ The structural variant (SV) calling pipeline for Alzheimer's Disease Sequencing 
 1. Apply SV calling programs on each sample
 - [Manta](sample_level_calling/Snakefile-Manta)
 - [Smoove](sample_level_calling/Snakefile-Smoove)
-- [Strelka](sample_level_calling/Snakefile-Strelka)
+- [Strelka](sample_level_calling/Snakefile-Strelka) Note: Strelka was not performed for R4_36K.
 
-Note: Strelka was not performed for R4_36K. The complete flow is on [GCAD_SV_pipeline](https://bitbucket.org/ottov123/sv-pipeline/src/master/).
+The complete flow is on [GCAD_SV_pipeline](https://bitbucket.org/ottov123/sv-pipeline/src/master/).
 
 2. Merge VCFs for each sample
 - [svimmer](sample_level_calling/svimmer.sh)
 
 ### Project level joint genotyping
-3: Merge all samples
+3. Merge all samples
 - [svimmer](Graphtyper2/svimmer_merge.sh)
 
 4. Graphtyper2 joint genotyping
 
-Note: Joint genotyping was performed for each 50kb region.
+Note: Joint genotyping was performed for each 50kb region, but centromere.
 
 ## License
 The implementation is available for academic and nonprofit use for free [LICENSE.md](LICENSE.md).
