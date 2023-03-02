@@ -1,0 +1,103 @@
+#
+#
+#
+#
+
+from datetime import datetime
+
+# timestamp
+ts = datetime.now().isoformat().replace(":", "")
+
+include: "Snakefile-get-beds"
+include: "Snakefile-get-ref"
+include: "Snakefile-get-cram"
+
+rule strelka_config:
+   group: "strelka"
+   input:
+      cram = ancient("data/{sample}_vcpa1.1.cram"),
+      crai = ancient("data/{sample}_vcpa1.1.cram.crai"),
+      ref1 = config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa",
+      fai  = config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa.fai",
+      regions = config['ref_dir'] + "/hg38.regions.no_decoy_hla.bed.gz",
+   output: 
+      "results/strelka-2.9.10/{sample}/runWorkflow.py"
+   threads: 1
+   shell:
+      """
+       /tools/strelka-2.9.10.centos6_x86_64/bin/configureStrelkaGermlineWorkflow.py \
+           --bam {input.cram} \
+           --referenceFasta {input.ref1} \
+           --callRegions {input.regions} \
+           --runDir results/strelka-2.9.10/{wildcards.sample}
+      """
+
+rule strelka_run:
+   group: "strelka"
+   input:
+      "results/strelka-2.9.10/{sample}/runWorkflow.py"
+   output:
+      "results/strelka-2.9.10/{sample}/results/variants/variants.vcf.gz"
+   log:
+      "results/strelka-2.9.10/{sample}/{sample}." + ts + ".strelka-2.9.10.log",
+   benchmark:
+      "results/strelka-2.9.10/{sample}/{sample}.strelka-2.9.10.benchmark.txt"
+   threads: workflow.cores * 0.5
+   resources:
+      mem_mb=3100
+   shell:
+      "{input} --mode local --jobs {threads} 2>&1 | tee {log}"
+
+rule strelka_report:
+   group: "strelka"
+   input:
+      vcf="results/strelka-2.9.10/{sample}/results/variants/variants.vcf.gz",
+      ben="results/strelka-2.9.10/{sample}/{sample}.strelka-2.9.10.benchmark.txt",
+   output:
+      "results/strelka-2.9.10/{sample}.strelka-2.9.10.results.tar.gz"
+   params:
+      run_log = "results/strelka-2.9.10/{sample}/{sample}." + ts + ".strelka-2.9.10.log",
+      results_dir = "results/strelka-2.9.10/{sample}"
+   threads: 1
+   shell:
+      """
+      source /workflow-scripts/config.sh
+      source /workflow-scripts/common_functions.sh
+
+      export RID=$(get_run)
+
+      set -euxo pipefail
+      TM=$(cut -f1 {input.ben} | grep -Po "^\d+")
+      track_item strelka_duration $TM
+
+      LG={params.results_dir}/{wildcards.sample}.*.strelka-2.9.10.log
+      if [ -s "{params.run_log}" ];then
+        LG="{params.run_log}"
+      fi
+
+      ST=$(grep -m1 'WorkflowRunner' $LG | cut -d' ' -f1 | sed 's/\[\|]\|Z//g')
+      track_item strelka_st_tm $ST
+
+      EN=$(tail -1 $LG | cut -d' ' -f1 | sed 's/\[\|]\|Z//g')
+      track_item strelka_dn_tm $EN
+
+      # make tar
+      tar -czf {output} {params.results_dir}/
+      SZ=$(stat -c '%s' {output})
+      track_item strelka_tar_sz $SZ
+
+      bcftools stats {input.vcf} > /tmp/strelka.stats
+
+      SNP=$(grep -Po "number of SNPs:\s\d+" /tmp/strelka.stats | grep -Po "\d+")
+      INDEL=$(grep -Po "number of indels:\s\d+" /tmp/strelka.stats | grep -Po "\d+")
+      track_item strelka_snps $SNP
+      track_item strelka_indels $INDEL
+
+      # upload tar
+      s3_results=$(get_s3_results_location $PRJ_ID $SM)   
+      TR=$(basename {output})
+      LOC="$s3_results/SV/Strelka-2.9.10/$TR"
+      /workflow-scripts/upload_s3.py --file {output} --upload_path $LOC
+      track_item strelka_tar_loc $(rawurlencode $LOC)
+
+      """

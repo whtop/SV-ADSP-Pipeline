@@ -1,0 +1,104 @@
+#
+#
+#
+#
+
+from datetime import datetime
+
+# timestamp
+ts = datetime.now().isoformat().replace(":", "")
+
+include: "Snakefile-get-beds"
+include: "Snakefile-get-ref"
+include: "Snakefile-get-cram"
+
+rule manta_config:
+   group: "manta"
+   input:
+      cram = ancient("data/{sample}_vcpa1.1.cram"),
+      crai = ancient("data/{sample}_vcpa1.1.cram.crai"),
+      ref1 = ancient(config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa"),
+      fai  = ancient(config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa.fai"),
+      regions = config['ref_dir'] + "/hg38.regions.no_decoy_hla.bed.gz",
+   output: 
+      "results/manta-1.6.0/{sample}/runWorkflow.py"
+   threads: 1
+   shell:
+      """
+       /tools/manta-1.6.0.centos6_x86_64/bin/configManta.py \
+           --bam {input.cram} \
+           --callRegions {input.regions} \
+           --referenceFasta {input.ref1} \
+           --runDir results/manta-1.6.0/{wildcards.sample}
+      """
+
+rule manta_run:
+   group: "manta"
+   input:
+      "results/manta-1.6.0/{sample}/runWorkflow.py"
+   output:
+      "results/manta-1.6.0/{sample}/results/variants/candidateSV.vcf.gz"
+   log:
+      "results/manta-1.6.0/{sample}/{sample}." + ts + ".manta-1.6.0.log",
+   benchmark:
+      "results/manta-1.6.0/{sample}/{sample}.manta-1.6.0.benchmark.txt"
+   threads: workflow.cores * 0.5
+   resources:
+      mem_mb=2100
+   shell:
+      "{input} --mode local --jobs {threads} 2>&1 | tee {log}"
+
+rule manta_report:
+   group: "manta"
+   input:
+      vcf="results/manta-1.6.0/{sample}/results/variants/candidateSV.vcf.gz",
+      ben="results/manta-1.6.0/{sample}/{sample}.manta-1.6.0.benchmark.txt",
+   output:
+      "results/manta-1.6.0/{sample}.manta-1.6.0.results.tar.gz"
+   params:
+      run_log = "results/manta-1.6.0/{sample}/{sample}." + ts + ".manta-1.6.0.log",
+      results_dir = "results/manta-1.6.0/{sample}"
+   threads: 1
+   shell:
+      """
+      source /workflow-scripts/config.sh
+      source /workflow-scripts/common_functions.sh
+
+      export RID=$(get_run)
+
+      set -euxo pipefail
+      TM=$(cut -f1 {input.ben} | grep -Po "^\d+")
+      track_item manta_duration $TM
+
+      LG={params.results_dir}/{wildcards.sample}.*.manta-1.6.0.log
+      if [ -s "{params.run_log}" ];then
+        LG="{params.run_log}"
+      fi
+
+      ST=$(grep -m1 'WorkflowRunner' $LG | cut -d' ' -f1 | sed 's/\[\|]\|Z//g')
+      track_item manta_st_tm $ST
+
+      EN=$(tail -1 $LG | cut -d' ' -f1 | sed 's/\[\|]\|Z//g')
+      track_item manta_dn_tm $EN
+
+      # make tar
+      tar -czf {output} {params.results_dir}
+      SZ=$(stat -c '%s' {output})
+      track_item manta_tar_sz $SZ
+ 
+      bcftools query -f '%ID\\n' {input.vcf} | cut -d: -f1 > /tmp/manta.ct
+      DEL=$(grep -c MantaDEL /tmp/manta.ct)
+      INS=$(grep -c MantaINS /tmp/manta.ct)
+      TOT=$(grep -c Manta /tmp/manta.ct)
+      SNP=$((TOT - INS - DEL ))
+      track_item manta_snps $SNP
+      track_item manta_indels $((DEL + INS))
+
+      # upload tar
+      s3_results=$(get_s3_results_location $PRJ_ID $SM)
+      TR=$(basename {output})
+      LOC="$s3_results/SV/Manta-1.6.0/$TR"
+      /workflow-scripts/upload_s3.py --file {output} --upload_path $LOC
+      track_item manta_tar_loc $(rawurlencode $LOC)
+
+      """

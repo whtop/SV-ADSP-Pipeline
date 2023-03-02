@@ -1,0 +1,40 @@
+#
+#
+#
+#
+
+from datetime import datetime
+
+# timestamp
+ts = datetime.now().isoformat().replace(":", "")
+
+include: "Snakefile-get-beds"
+include: "Snakefile-get-ref"
+
+# Rules
+
+rule smoove_run:
+   group: "smoove"
+   input:
+      seqfile = "data/samples/{sample}.cram",
+      ref = config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa",
+      fai = config['ref_dir'] + "/GRCh38_full_analysis_set_plus_decoy_hla.fa.fai",
+      bed = config['ref_dir'] + "/exclude-list.hg38.bed"
+   output: 
+      config['results_dir'] + "/smoove-0.2.5/{sample}/{sample}-smoove.genotyped.vcf.gz"
+   params:
+      ts = ts,
+   log:
+      "logs/{sample}." + ts + ".smoove-0.2.5.log",
+   benchmark:
+      "benchmarks/{sample}.smoove-0.2.5.benchmark.txt"
+   threads: 1
+   shell:
+      """
+        smoove call --name {wildcards.sample} \
+                    --outdir {config[results_dir]}/smoove-0.2.5/{wildcards.sample} \
+                    --exclude {input.bed} \
+                    --fasta {input.ref} \
+                    -p {threads} \
+                    --genotype {input.seqfile} 2>&1 | tee {log}
+      """
