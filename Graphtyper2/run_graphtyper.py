@@ -28,7 +28,7 @@ X	156,040,895	CM000685.2	NC_000023.11
 Y	57,227,415	CM000686.2	NC_000024.10
 """
 
-cyto = pd.read_csv("../masks/unused/cytoBand.txt", delim_whitespace=True, header=None)
+cyto = pd.read_csv("cytoBand.txt", delim_whitespace=True, header=None)
 cyto = cyto[cyto[4]=="acen"]
 chrs = [k.split()[:2] for k in chrs.strip().split(sep="\n")]
 seg = 1000000
@@ -41,7 +41,7 @@ for i, j in chrs:
     print(i, cs/seg, ce/seg, (ce - cs)/seg)
 
 
-output_dir="/home/hui_wang/20210326_sv_cnv/data/graphtyper/output_union"
+output_dir="output_union"
 for i, j in chrs:
     if i=="X" or i =="Y": continue
 

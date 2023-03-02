@@ -1,8 +1,8 @@
-# copy svimmer merged calls for each sample from wan-ping's folder to my folder
+# copy svimmer merged calls for each sample to my folder
 import os
 
-samples = [i.strip() for i in open("../../rare_CNV_analysis/ms_merged/summary_analysis/samples.txt")]
-fdir = "/mnt/data3/old-master/leew/17k_sv/svimmer"
+samples = [i.strip() for i in open("samples.txt")]
+fdir = "svimmer_result_directory"
 odir = "union"
 if not os.path.exists(odir): os.mkdir(odir)
 

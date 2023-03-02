@@ -25,8 +25,9 @@ The complete flow is on [GCAD_SV_pipeline](https://bitbucket.org/ottov123/sv-pip
 - [svimmer](Graphtyper2/svimmer_merge.sh)
 
 4. Graphtyper2 joint genotyping
+- [Graphtyper2](Graphtyper2/run_graphtyper2.sh)
 
-Note: Joint genotyping was performed for each 50kb region, but centromere.
+Note: Joint genotyping was performed for each 100kb region, but centromere.
 
 ## License
 The implementation is available for academic and nonprofit use for free [LICENSE.md](LICENSE.md).

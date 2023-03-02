@@ -1,7 +1,7 @@
-1.  using copy_data.py to copy svimmer merged Manta and Smoove from Wan-ping. 
+1.  using copy_data.py to copy svimmer merged calls for Manta and Smoove. 
 2.	using svimmer_merge.sh to run svimmer to merge call across 16905 samples. 
 3.	using index.sh to remove BNDs and index vcf files.
 4.	using run_graphtyper.py and run_graphtyper.sh to run graphtyper for all chromosomes
     Problematic regions:
-        a. Chr1: 143000001-144000000 (Begin with Gap, so it is slow, using 143300001-144000000 instead)
-        b. Chr21_8000001-9000000 (Many Gaps in between, since only LincRNA in this region, this region was deleted from analysis)
+        a. Chr1:143000001-144000000 (Begin with Gap, so it is slow, using 143300001-144000000 instead)
+        b. Chr21:8000001-9000000 (Many Gaps in between, since only LincRNA in this region, this region was deleted from analysis)
