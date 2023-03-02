@@ -3,9 +3,9 @@ The structural variant (SV) calling pipeline for Alzheimer's Disease Sequencing 
 
 
 ## Step 1 : Sample level calling
-- [sample_level_calling/Snakefile-Manta](Manta)
-- [sample_level_calling/Snakefile-Smoove](Smoove)
-- [sample_level_calling/Snakefile-Strelka](Strelka)
+- [Manta](sample_level_calling/Snakefile-Manta)
+- [Smoove](sample_level_calling/Snakefile-Smoove)
+- [Strelka](sample_level_calling/Snakefile-Strelka)
 
 Note: Strelka was not performed for R4_36K.
 
