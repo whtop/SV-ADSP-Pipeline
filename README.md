@@ -25,9 +25,17 @@ The complete flow is on [GCAD_SV_pipeline](https://bitbucket.org/ottov123/sv-pip
 - [svimmer](Graphtyper2/svimmer_merge.sh)
 
 4. Graphtyper2 joint genotyping
-- [Graphtyper2](Graphtyper2/run_graphtyper2.sh)
+- [Graphtyper2](Graphtyper2/run_graphtyper.sh)
 
-Note: Joint genotyping was performed for each 100kb region, but centromere.
+Note: Joint genotyping was performed for each 100kb region, excluding centromeres.
+
+## Analysis
+### SV burden
+Evaluate SV burden in AD cases and controls
+
+### SV association analysis
+Association analysis of SVs using GCTA
+
 
 ## License
 The implementation is available for academic and nonprofit use for free [LICENSE.md](LICENSE.md).
